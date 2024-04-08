@@ -30,3 +30,5 @@ It currently fails with:
 ```
 
 The exception `Buffer_is_not_page_aligned` is raised by `Io_page.of_cstruct_exn` (https://github.com/mirage/io-page/blob/53ba5153b05f328cce9b40f61d6bb26e56a4f26d/lib/io_page.mli#L71C5-L71C19) that is called by `Blkfront.to_iopage` (https://github.com/mirage/mirage-block-xen/blob/601a4db44ac561a7c8c1b978f132587b50a1485e/lib/front/blkfront.ml#L462) probably when we try to read the block (https://github.com/mirage/mirage-block-xen/blob/601a4db44ac561a7c8c1b978f132587b50a1485e/lib/front/blkfront.ml#L470). 
+
+Continuing investigations, I went down to https://github.com/mirage/ocaml-tar/blob/3bad2c2b3abfbcdf85b95ae69058888574941742/mirage/tar_mirage.ml#L96-L97 with the freshly create buffer not address aligned :(
