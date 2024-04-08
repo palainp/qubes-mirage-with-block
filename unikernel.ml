@@ -14,6 +14,25 @@ struct
     KV.list root pathkey >>+= fun res ->
     Lwt.return res
 
+  let read_key root pathkey ~offset ~length =
+    KV.get_partial root pathkey ~offset ~length >>= function
+    | Error e -> Lwt.return (Error e)
+    | Ok data -> Lwt.return (Ok data)
+
+  let read root path ~offset ~length =
+    let pathkey = Mirage_kv.Key.v path in
+    read_key root pathkey ~offset ~length
+
+  let size_key root pathkey =
+    KV.size root pathkey >>= function
+    | Error `Not_found k -> Log.err (fun f -> f "size: '%s' isn't found" (Mirage_kv.Key.to_string k)); Lwt.return 0
+    | Error _ -> Log.err (fun f -> f "connot get size for '%s'" (Mirage_kv.Key.to_string pathkey)); Lwt.return 0
+    | Ok s -> Lwt.return (Optint.Int63.to_int s)
+
+  let size root path =
+    let pathkey = Mirage_kv.Key.v path in
+    size_key root pathkey
+
   let get_required qubesDB key =
     match Qubes.DB.read qubesDB key with
     | None -> failwith (Printf.sprintf "Required QubesDB key %S not found" key)
@@ -37,15 +56,20 @@ struct
   (* this gives a result for a cmd like: `xenstore-ls /local/domain/X` with X the domain id from `xl list` *)
     Xen_os.Xs.make () >>= fun xs ->
     Xen_os.Xs.immediate xs (fun h ->
-      (* available disks: 51712 , 51728 , 51744 , for private, X, X ? *)
+      (* available disks: 51712 , 51728 , 51744 , for private, root, and volatile ? *)
       Xen_os.Xs.read h "device/vbd/51712/backend"
     ) >>= fun blk ->
     Log.info(fun f -> f "blk = <%s>" blk);
 
-  (* try to load a block device *)
+  (* try to list files in a block device *)
     lsdir disk "/" >>= fun lst ->
+    Log.info(fun f -> f "/ contains %d elements" (List.length lst));
     List.iter (fun (k, _) -> Log.info (fun f -> f "\t%s" (Mirage_kv.Key.to_string k))) lst ;
 
-    Lwt.return_unit
+    let filename = "/hello.txt" in
+    size disk filename >>= fun s ->
+    read disk filename ~offset:(Optint.Int63.of_int 0) ~length:s >>= function
+    | Error _ -> Log.info(fun f -> f "Error with /hello.txt") ; Lwt.return_unit
+    | Ok data -> Log.info(fun f -> f "<%s> contains <%s>" filename data) ; Lwt.return_unit
 
 end
