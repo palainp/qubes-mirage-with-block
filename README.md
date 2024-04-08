@@ -28,3 +28,5 @@ It currently fails with:
 [2024-04-07 18:30:28] Called from Dune__exe__Main in file "main.ml", line 114, characters 5-10
 [2024-04-07 18:30:28] Solo5: solo5_exit(2) called
 ```
+
+The exception `Buffer_is_not_page_aligned` is raised by `Io_page.of_cstruct_exn` (https://github.com/mirage/io-page/blob/53ba5153b05f328cce9b40f61d6bb26e56a4f26d/lib/io_page.mli#L71C5-L71C19) that is called by `Blkfront.to_iopage` (https://github.com/mirage/mirage-block-xen/blob/601a4db44ac561a7c8c1b978f132587b50a1485e/lib/front/blkfront.ml#L462) probably when we try to read the block (https://github.com/mirage/mirage-block-xen/blob/601a4db44ac561a7c8c1b978f132587b50a1485e/lib/front/blkfront.ml#L470). 
